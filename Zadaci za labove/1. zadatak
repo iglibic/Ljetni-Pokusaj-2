@@ -1,0 +1,95 @@
+/* Napisati program koji prvo pročita koliko redaka ima datoteka, tj. koliko ima studenata
+zapisanih u datoteci. Nakon toga potrebno je dinamički alocirati prostor za niz struktura
+studenata (ime, prezime, bodovi) i učitati iz datoteke sve zapise. Na ekran ispisati ime,
+prezime, apsolutni i relativni broj bodova.
+Napomena: Svaki redak datoteke sadrži ime i prezime studenta, te broj bodova na kolokviju.
+relatvan_br_bodova = br_bodova/max_br_bodova*100
+*/
+
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
+#define FILE_NOT_OPENED (-1)
+#define MAX_NAME (64)
+
+typedef struct student_* StudentP;
+typedef struct student_{
+	char fName[MAX_NAME];
+	char lName[MAX_NAME];
+	int points;
+} Student;
+
+int numOfRows(const char* fileName);
+StudentP loadFromFile(const char* fileName, int NOrows);
+int printStudents(StudentP students, int NORows);
+
+int main() {
+	int totalRows = numOfRows("STUDENTI.txt");
+
+	StudentP students = loadFromFile("STUDENTI.txt", totalRows);
+
+	printStudents(students, totalRows);
+
+	free(students);
+
+	return EXIT_SUCCESS;
+}
+
+int numOfRows(const char* fileName) {
+	FILE* fp = fopen(fileName, "r");
+	if (fp == NULL) {
+		printf("ERROR! Could not open the file!\n");
+		return FILE_NOT_OPENED;
+	}
+
+	char fname[MAX_NAME], lname[MAX_NAME];
+	int grade;
+	int total = 0;
+
+	while (fscanf(fp, "%s %s %d", fname, lname, &grade) == 3) {
+		total++;
+	}
+
+	fclose(fp);
+
+	return total;
+}
+
+StudentP loadFromFile(const char* fileName, int NOrows) {
+	FILE* fp = fopen(fileName, "r");
+	if (fp == NULL) {
+		printf("ERROR! Could not open the file!\n");
+		return NULL;
+	}
+
+	StudentP student = malloc(NOrows * sizeof(Student));
+	if (student == NULL) {
+		printf("ERROR! Could not allocate memmory!\n");
+		fclose(fp);
+		return NULL;
+	}
+
+	for (int i = 0; i < NOrows; i++) {
+		if (fscanf(fp, "%s %s %d", student[i].fName, student[i].lName, &student[i].points) != 3) {
+			printf("ERROR!\n");
+			free(student);
+			fclose(fp);
+			return NULL;
+		}
+	}
+
+	fclose(fp);
+
+	return student;
+}
+
+int printStudents(StudentP students, int NORows) {
+	for (int i = 0; i < NORows; i++) {
+		float rPoints = (float)students[i].points / 100 * 100;
+		printf("Ime: %s, Prezime: %s, Bodovi: %d, Relativni bodovi: %f\n", students[i].fName, students[i].lName, students[i].points, rPoints);
+	}
+	return EXIT_SUCCESS;
+}
