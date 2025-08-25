@@ -1,4 +1,4 @@
-/*Napisati program koji iz datoteke "clanovi.txt" cita podatke o clanovima knjiznice,
+/*napisati program koji iz datoteke"clanovi.txt" cita podatke o clanovima knjiznice,
 a iz datoteke "knjige.txt" cita podatke o posudenim knjigama.
 podatci o clanovima knjiznice trebaju se spremiti u jednostruku vezanu listu sortiranu po prezimenu, pa po imenu, zatim po IDu
 podaci o posudenim knjigama trebaju se spremiti u jednostruku vezanu listu sortiranu po nazivu knjnige.
@@ -29,59 +29,55 @@ typedef struct knjiga {
     KnjigaP next;
 } Knjiga;
 
-ClanP createNewMember(int iD, char* fname, char* lname, int ReadBooks);
+ClanP createNewMember(char* fName, char* lName, int id, int readBooks);
 int loadFromFileM(ClanP head, const char* fileName);
 int insertSortedM(ClanP head, ClanP newMember);
-
 KnjigaP createNewBook(char* name, int id);
 int loadFromFileB(KnjigaP head, const char* fileName);
 int insertSortedB(KnjigaP head, KnjigaP newBook);
-
 int freeListM(ClanP head);
 int freeListB(KnjigaP head);
 
-int booksRead(ClanP head1, KnjigaP head2);
+int loadReadBooks(ClanP headM, KnjigaP headB);
 int printMostBooksRead(ClanP head);
 
 int main() {
-    ClanP head1 = (ClanP)malloc(sizeof(Clan));
-    if (head1 == NULL) {
+    ClanP headM = (ClanP)malloc(sizeof(Clan));
+    if (headM == NULL) {
         printf("ERROR! Could not allocate memmory!\n");
         return EXIT_FAILURE;
     }
-    head1->next = NULL;
+    headM->next = NULL;
 
-    loadFromFileM(head1, "CLANOVI.txt");
-
-    KnjigaP head2 = (KnjigaP)malloc(sizeof(Knjiga));
-    if (head2 == NULL) {
+    KnjigaP headB = (KnjigaP)malloc(sizeof(Knjiga));
+    if (headB == NULL) {
         printf("ERROR! Could not allocate memmory!\n");
         return EXIT_FAILURE;
     }
-    head2->next = NULL;
+    headB->next = NULL;
 
-    loadFromFileB(head2, "KNJIGE.txt");
+    loadFromFileM(headM, "CLANOVI.txt");
+    loadFromFileB(headB, "KNJIGE.txt");
+    
+    loadReadBooks(headM, headB);
+    printMostBooksRead(headM);
 
-    booksRead(head1, head2);
-
-    printMostBooksRead(head1);
-
-    freeListM(head1);
-    freeListB(head2);
+    freeListM(headM);
+    freeListB(headB);
 
     return EXIT_SUCCESS;
 }
 
-ClanP createNewMember(int iD, char* fname, char* lname, int ReadBooks) {
+ClanP createNewMember(char* fName, char* lName, int id, int readBooks) {
     ClanP newMember = (ClanP)malloc(sizeof(Clan));
     if (newMember == NULL) {
         printf("ERROR! Could not allocate memmory!\n");
         return NULL;
     }
-    newMember->id = iD;
-    strcpy(newMember->firstName, fname);
-    strcpy(newMember->lastName, lname);
-    newMember->readBooks = ReadBooks;
+    strcpy(newMember->firstName, fName);
+    strcpy(newMember->lastName, lName);
+    newMember->id = id;
+    newMember->readBooks = readBooks;
     newMember->next = NULL;
 
     return newMember;
@@ -91,14 +87,12 @@ int loadFromFileM(ClanP head, const char* fileName) {
     FILE* fp = fopen(fileName, "r");
     if (fp == NULL) {
         printf("ERROR! Could not open the file!\n");
-        return FILE_NOT_OPENED;
+        exit(EXIT_FAILURE);
     }
-
+    char fname[MAX], lname[MAX];
     int id;
-    char fName[MAX], lName[MAX];
-
-    while (fscanf(fp, "%d %s %s", &id, fName, lName) == 3) {
-        ClanP newMember = createNewMember(id, fName, lName, 0);
+    while (fscanf(fp, "%d %s %s", &id, fname, lname) == 3) {
+        ClanP newMember = createNewMember(fname, lname, id, 0);
         if (newMember == NULL) {
             printf("ERROR! Could not allocate memmory!\n");
             return EXIT_FAILURE;
@@ -106,23 +100,23 @@ int loadFromFileM(ClanP head, const char* fileName) {
         insertSortedM(head, newMember);
     }
     fclose(fp);
+
     return EXIT_SUCCESS;
 }
 
 int insertSortedM(ClanP head, ClanP newMember) {
     ClanP prev = head;
     ClanP curr = head->next;
-
     while (curr) {
         if (strcmp(newMember->lastName, curr->lastName) < 0) {
             break;
         }
-        else if (strcmp(newMember->lastName, curr->lastName) == 0) {
-            if (strcmp(newMember->firstName, curr->firstName) < 0) {
+        else {
+            if ((strcmp(newMember->lastName, curr->lastName) == 0) && (strcmp(newMember->firstName, curr->firstName) < 0)) {
                 break;
             }
-            else if (strcmp(newMember->firstName, curr->firstName) == 0) {
-                if (newMember->id <= curr->id) {
+            else {
+                if ((strcmp(newMember->lastName, curr->lastName) == 0) && (strcmp(newMember->firstName, curr->firstName) == 0) && (newMember->id <= curr->id)) {
                     break;
                 }
                 else {
@@ -130,14 +124,6 @@ int insertSortedM(ClanP head, ClanP newMember) {
                     curr = curr->next;
                 }
             }
-            else {
-                prev = curr;
-                curr = curr->next;
-            }
-        }
-        else {
-            prev = curr;
-            curr = curr->next;
         }
     }
     prev->next = newMember;
@@ -163,11 +149,10 @@ int loadFromFileB(KnjigaP head, const char* fileName) {
     FILE* fp = fopen(fileName, "r");
     if (fp == NULL) {
         printf("ERROR! Could not open the file!\n");
-        return FILE_NOT_OPENED;
+        exit(EXIT_FAILURE);
     }
     char name[MAX];
     int id;
-
     while (fscanf(fp, "%s %d", name, &id) == 2) {
         KnjigaP newBook = createNewBook(name, id);
         if (newBook == NULL) {
@@ -177,15 +162,15 @@ int loadFromFileB(KnjigaP head, const char* fileName) {
         insertSortedB(head, newBook);
     }
     fclose(fp);
+
     return EXIT_SUCCESS;
 }
 
 int insertSortedB(KnjigaP head, KnjigaP newBook) {
     KnjigaP prev = head;
     KnjigaP curr = head->next;
-
     while (curr) {
-        if (strcmp(newBook->name, curr->name) < 0) {
+        if (strcmp(newBook->name, curr->name) <= 0) {
             break;
         }
         else {
@@ -199,43 +184,37 @@ int insertSortedB(KnjigaP head, KnjigaP newBook) {
     return EXIT_SUCCESS;
 }
 
-int booksRead(ClanP head1, KnjigaP head2) {
-    ClanP curr = head1->next;
-
-    while (curr) {
-        KnjigaP temp = head2->next;
-
-        while (temp) {
-            if (curr->id == temp->id_clana) {
-                curr->readBooks++;
+int loadReadBooks(ClanP headM, KnjigaP headB) {
+    ClanP temp1 = headM->next;
+    while (temp1) {
+        KnjigaP temp2 = headB->next;
+        while (temp2) {
+            if (temp1->id == temp2->id_clana) {
+                temp1->readBooks++;
             }
-            temp = temp->next;
+            temp2 = temp2->next;
         }
-        curr = curr->next;
+        temp1 = temp1->next;
     }
     return EXIT_SUCCESS;
 }
 
 int printMostBooksRead(ClanP head) {
     ClanP temp = head->next;
-    int max = 0;
-
+    int most = 0;
     while (temp) {
-        if (temp->readBooks > max) {
-            max = temp->readBooks;
+        if (temp->readBooks > most) {
+            most = temp->readBooks;
         }
-            temp = temp->next;
+        temp = temp->next;
     }
 
-    temp = head->next;
-    while (temp) {
-        if (temp->readBooks == max) {
-            printf("Osoba s najviše pročitanih knjiga: %s %s", temp->firstName, temp->lastName);
-            break;
+    ClanP curr = head->next;
+    while (curr) {
+        if (curr->readBooks == most) {
+            printf("Osoba s najvise procitanih knjiga (%d) je: %s %s\n", most, curr->firstName, curr->lastName);
         }
-        else {
-            temp = temp->next;
-        }
+        curr = curr->next;
     }
     return EXIT_SUCCESS;
 }
@@ -248,7 +227,6 @@ int freeListM(ClanP head) {
         free(toFree);
     }
     head->next = NULL;
-
     return EXIT_SUCCESS;
 }
 
@@ -260,6 +238,5 @@ int freeListB(KnjigaP head) {
         free(toFree);
     }
     head->next = NULL;
-
     return EXIT_SUCCESS;
 }
