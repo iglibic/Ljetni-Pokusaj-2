@@ -8,7 +8,6 @@ liste izbace hoteli s prihodom manjim od izračunate srednje vrijednosti.*/
 #include<stdlib.h>
 #include<string.h>
 
-#define FILE_NOT_OPENED (-1)
 #define MAX 32
 
 typedef struct _date {
@@ -25,33 +24,35 @@ typedef struct _hotel {
 	HotelP next;
 }Hotel;
 
-HotelP createNewHotel(char* hName, int income, Date date);
+HotelP createNewHotel(char* name, int income, Date date);
 int loadFromFile(HotelP head, const char* fileName);
 int insertSorted(HotelP head, HotelP newHotel);
 int printList(HotelP first);
 int freeList(HotelP head);
 
 float calcAvgIncome(HotelP head);
-int removeBelowAvg(HotelP head, float avgIncome);
+int removeBlwAvg(HotelP head, float avg);
 
 int main() {
 	HotelP head = (HotelP)malloc(sizeof(Hotel));
 	if (head == NULL) {
-		printf("ERROR! Could not allocate memmory!\n");
+		printf("ERROR! Could not allocate memmory1!\n");
 		return EXIT_FAILURE;
 	}
 	head->next = NULL;
 
 	loadFromFile(head, "HOTELI.txt");
 
+	printf("Pocetna lista: \n");
 	printList(head->next);
 
-	float incomeAvg = calcAvgIncome(head);
+	float avgIncome = calcAvgIncome(head);
+	printf("\nProsjecni godisnji prihod svih hotela je: %f\n", avgIncome);
 
-	printf("\nProsjek prihoda hotela: %f\n", incomeAvg);
+	printf("\nUklanjanje hotela ciji je prihod manji od prosjecnog...\n");
+	removeBlwAvg(head, avgIncome);
 
-	removeBelowAvg(head, incomeAvg);
-
+	printf("\nKonacna lista: \n");
 	printList(head->next);
 
 	freeList(head);
@@ -59,13 +60,13 @@ int main() {
 	return EXIT_SUCCESS;
 }
 
-HotelP createNewHotel(char* hName, int income, Date date) {
+HotelP createNewHotel(char* name, int income, Date date) {
 	HotelP newHotel = (HotelP)malloc(sizeof(Hotel));
 	if (newHotel == NULL) {
-		printf("ERROR! Could not allocate memmory!\n");
+		printf("ERROR! Could not allocate memmory2!\n");
 		return NULL;
 	}
-	strcpy(newHotel->name, hName);
+	strcpy(newHotel->name, name);
 	newHotel->income = income;
 	newHotel->date = date;
 	newHotel->next = NULL;
@@ -77,17 +78,16 @@ int loadFromFile(HotelP head, const char* fileName) {
 	FILE* fp = fopen(fileName, "r");
 	if (fp == NULL) {
 		printf("ERROR! Could not open the file!\n");
-		return EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
-
 	char name[MAX];
-	int y, m, d, income;
+	int d, m, y, salary;
 
-	while (fscanf(fp, "%s %d-%d-%d %d", name, &y, &m, &d, &income) == 5) {
+	while (fscanf(fp, "%s %d-%d-%d %d", name, &y, &m, &d, &salary) == 5) {			//%[^0-9] ili %[^\t\n0-9]
 		Date date = { y, m, d };
-		HotelP newHotel = createNewHotel(name, income, date);
+		HotelP newHotel = createNewHotel(name, salary, date);
 		if (newHotel == NULL) {
-			printf("ERROR! Could not allocate memmory!\n");
+			printf("ERROR! Could not allocate memmory3!\n");
 			return EXIT_FAILURE;
 		}
 		insertSorted(head, newHotel);
@@ -100,11 +100,9 @@ int loadFromFile(HotelP head, const char* fileName) {
 int insertSorted(HotelP head, HotelP newHotel) {
 	HotelP prev = head;
 	HotelP curr = head->next;
-
 	while (curr) {
 		Date date1 = newHotel->date;
 		Date date2 = curr->date;
-
 		if (date1.year < date2.year) {
 			break;
 		}
@@ -123,7 +121,6 @@ int insertSorted(HotelP head, HotelP newHotel) {
 			}
 		}
 	}
-
 	prev->next = newHotel;
 	newHotel->next = curr;
 
@@ -133,8 +130,8 @@ int insertSorted(HotelP head, HotelP newHotel) {
 int printList(HotelP first) {
 	HotelP temp = first;
 	while (temp) {
-		printf("Ime hotela: %s, Datum izgradnje: %d-%d-%d, Godisnji prihod: %d\n", temp->name, temp->date.year, 
-			temp->date.month, temp->date.day, temp->income);
+		printf("Godina izgradnje: %d-%d-%d, Ime hotela: %s, Godisnji prihodi: %d\n", temp->date.year, 
+			temp->date.month, temp->date.day, temp->name, temp->income);
 		temp = temp->next;
 	}
 	return EXIT_SUCCESS;
@@ -154,23 +151,21 @@ int freeList(HotelP head) {
 
 float calcAvgIncome(HotelP head) {
 	HotelP temp = head->next;
-	int totalIncome = 0;
-	int numOfHotels = 0;
-
+	int total = 0;
+	float totalIncome = 0.0;
 	while (temp) {
 		totalIncome += temp->income;
-		numOfHotels++;
+		total++;
 		temp = temp->next;
 	}
-	return (float)totalIncome / numOfHotels;
+	return totalIncome / total;
 }
 
-int removeBelowAvg(HotelP head, float avgIncome) {
+int removeBlwAvg(HotelP head, float avg) {
 	HotelP prev = head;
 	HotelP curr = head->next;
-
 	while (curr) {
-		if ((float)curr->income < avgIncome) {
+		if ((float)curr->income < avg) {
 			prev->next = curr->next;
 			free(curr);
 			curr = prev->next;
@@ -180,6 +175,5 @@ int removeBelowAvg(HotelP head, float avgIncome) {
 			curr = curr->next;
 		}
 	}
-
 	return EXIT_SUCCESS;
 }
