@@ -17,7 +17,7 @@ typedef struct _node {
     NodeP next;
 } Node;
 
-int generateRandValue(int usedValues[]);
+int generateRandValue();
 NodeP createNewNode(int value);
 int addNewNode(NodeP head, int el);
 int printList(NodeP first);
@@ -35,11 +35,9 @@ int main() {
         return EXIT_FAILURE;
     }
     head->next = NULL;
-
-    int usedValues[100] = { 0 };
-
+    
     for (int i = 0; i < 30; i++) {
-        addNewNode(head, generateRandValue(usedValues));
+        addNewNode(head, generateRandValue());
     }
 
     printList(head->next);
@@ -50,18 +48,16 @@ int main() {
 
     printList(head->next);
 
+    printf("\nUpis preostallih vrijednosti u datoteku...");
+    insertSorted(head, "UPIS.txt");
+
     freeList(head);
 
     return EXIT_SUCCESS;
 }
 
-int generateRandValue(int usedValues[]) {
-    int value;
-    do {
-        value = rand() % 101;
-    } while (usedValues[value - 100]);
-    usedValues[value - 100] = 1;
-    return value;
+int generateRandValue() {
+    return rand() % 101;
 }
 
 NodeP createNewNode(int value) {
