@@ -3,10 +3,7 @@ brojeva gradi vezanu listu. Ispisati listu.
 
 Izbaciti iz liste sve one brojeve koji su djeljivi s 3 ili imaju znamenku 3 i rezultatnu listu
 upisati u datoteku u sortiranom redoslijedu od najmanjeg do najvećeg broja (sama lista se
-ne smije sortirati prije upisa u datoteku). – za ocjenu dovoljan
-
-Izmijeniti gornji zadatak na način da u početnoj vezanoj listi nema duplih vrijednosti. – za
-ocjenu dobar*/
+ne smije sortirati prije upisa u datoteku). – za ocjenu dovoljan*/
 
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
