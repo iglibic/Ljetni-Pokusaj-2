@@ -5,12 +5,14 @@
 // OCJENA 2:
 // Svim osobama na listi generirati jedinstveni ID u opsegu od 100
 // do 180, a zatim unijeti jedan ID i izbrisati tu osobu. Ispisati novu listu.
+
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
+#define FILE_NOT_OPENED (-1)
 #define MAX_NAME_LEN (32)
 
 typedef struct _date {
@@ -19,6 +21,7 @@ typedef struct _date {
     int year;
 } Date;
 
+struct _person;
 typedef struct _person* PersonP;
 typedef struct _person {
     char firstName[MAX_NAME_LEN];
@@ -28,18 +31,16 @@ typedef struct _person {
     PersonP next;
 } Person;
 
-PersonP createNewPerson(char* fName, char* lName, int iD, Date date);
+int generateUniqueID(int usedValues[]);
+PersonP createNewPerson(char* fName, char* lName, int id, Date date);
 int loadFromFile(PersonP head, const char* fileName, int usedValues[]);
 int insertSorted(PersonP head, PersonP newPerson);
 int printList(PersonP first);
 int freeList(PersonP head);
 
-int generateUniqueId(int usedIDs[]);
-int deleteById(PersonP head, int iD);
+int deleteByID(PersonP head, int id);
 
 int main() {
-    srand((unsigned int)time(NULL));
-    
     PersonP head = (PersonP)malloc(sizeof(Person));
     if (head == NULL) {
         printf("ERROR! Could not allocate memmory!\n");
@@ -51,14 +52,15 @@ int main() {
 
     loadFromFile(head, "OSOBE.txt", usedValues);
 
+    printf("Pocetna lista: \n");
     printList(head->next);
 
     int id;
 
-    printf("\nUnesite ID osobe koju zelite izbristai iz liste: ");
+    printf("\nUnesite ID osobe koju zelite izbrisati iz liste: ");
     scanf("%d", &id);
 
-    deleteById(head, id);
+    deleteByID(head, id);
 
     printf("\nLista nakon brisanja: \n");
     printList(head->next);
@@ -68,16 +70,16 @@ int main() {
     return EXIT_SUCCESS;
 }
 
-int generateUniqueId(int usedIDs[]) {
+int generateUniqueID(int usedValues[]) {
     int value;
     do {
-        value = rand() % 81 + 100;
-    } while (usedIDs[value - 100]);
-    usedIDs[value - 100] = 1;
+        value = rand() % (180 - 100 + 1) + 100;
+    } while (usedValues[value - 100]);
+    usedValues[value - 100];
     return value;
 }
 
-PersonP createNewPerson(char* fName, char* lName, int iD, Date date) {
+PersonP createNewPerson(char* fName, char* lName, int id, Date date) {
     PersonP newPerson = (PersonP)malloc(sizeof(Person));
     if (newPerson == NULL) {
         printf("ERROR! Could not allocate memmory!\n");
@@ -85,25 +87,24 @@ PersonP createNewPerson(char* fName, char* lName, int iD, Date date) {
     }
     strcpy(newPerson->firstName, fName);
     strcpy(newPerson->lastName, lName);
-    newPerson->idNumber = iD;
+    newPerson->idNumber = id;
     newPerson->birthDate = date;
     newPerson->next = NULL;
-    
+
     return newPerson;
 }
 
 int loadFromFile(PersonP head, const char* fileName, int usedValues[]) {
     FILE* fp = fopen(fileName, "r");
     if (fp == NULL) {
-        printf("ERROR! Could not allocate memmory!\n");
+        printf("ERROR! Could not open the file!\n");
         exit(EXIT_FAILURE);
     }
     char fname[MAX_NAME_LEN], lname[MAX_NAME_LEN];
     int d, m, y;
-
     while (fscanf(fp, "%s %s %d.%d.%d", fname, lname, &d, &m, &y) == 5) {
+        int id = generateUniqueID(usedValues);
         Date date = { d, m, y };
-        int id = generateUniqueId(usedValues);
         PersonP newPerson = createNewPerson(fname, lname, id, date);
         if (newPerson == NULL) {
             printf("ERROR! Could not allocate memmory!\n");
@@ -119,11 +120,9 @@ int loadFromFile(PersonP head, const char* fileName, int usedValues[]) {
 int insertSorted(PersonP head, PersonP newPerson) {
     PersonP prev = head;
     PersonP curr = head->next;
-
     while (curr) {
         Date date1 = newPerson->birthDate;
         Date date2 = curr->birthDate;
-
         if (date1.year < date2.year) {
             break;
         }
@@ -170,11 +169,11 @@ int freeList(PersonP head) {
     return EXIT_SUCCESS;
 }
 
-int deleteById(PersonP head, int iD) {
+int deleteByID(PersonP head, int id) {
     PersonP prev = head;
     PersonP curr = head->next;
     while (curr) {
-        if (curr->idNumber == iD) {
+        if (curr->idNumber == id) {
             prev->next = curr->next;
             free(curr);
             curr = prev->next;
@@ -185,5 +184,7 @@ int deleteById(PersonP head, int iD) {
             curr = curr->next;
         }
     }
-    return EXIT_SUCCESS;
+    printf("\nNije pronadjena osoba s tim ID-om!\n");
+
+    exit(EXIT_FAILURE);
 }
