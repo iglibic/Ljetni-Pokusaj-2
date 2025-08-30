@@ -75,7 +75,7 @@ int generateUniqueID(int usedValues[]) {
     do {
         value = rand() % (180 - 100 + 1) + 100;
     } while (usedValues[value - 100]);
-    usedValues[value - 100];
+    usedValues[value - 100] = 1;
     return value;
 }
 
