@@ -4,7 +4,11 @@ po prezimenu i imenu studenta.
 Nakon toga iz datoteka "predmet1.txt" i "predmet2.txt" se čita
 ID studenta, ocjena i datum polaganja predmeta. Pročitane
 podatke je potrebno unijeti u postojeću vezanu listu. Ispisati
-listu.*/
+listu.
+
+OCJENA 2: Unijeti jedan datum i izbrisati iz liste sve one osobe
+koje su položile bilo koji od predmeta na taj datum. Ispisati novu
+vezanu listu.*/
 
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
@@ -33,26 +37,42 @@ typedef struct _student {
 	Date date[2];
 } Student;
 
-StudentP createNewStudent(StudentP head, char* id, char* fname, char* lname, int grade[2], Date dat[2]);
-int loadFromData(StudentP head, char* fileName);
-int insertSorted(StudentP head, StudentP student);
-int loadFromFile1(StudentP head, char* fileName);
-int loadFromFile2(StudentP head, char* fileName);
+StudentP createNewStudent(char* id, char* fname, char* lname);
+int loadFromFile(StudentP head, const char* fileName);
+int insertSorted(StudentP head, StudentP newStudent);
+int loadGrades(StudentP head, const char* fileName, int index);
+int insertGradeAndDate(StudentP head, char* id, int grade, int index, Date date);
 int printList(StudentP first);
 int freeList(StudentP head);
 
+int deleteByDate(StudentP head, Date date);
+
 int main() {
-	StudentP head = malloc(sizeof(Student));
+	StudentP head = (StudentP)malloc(sizeof(Student));
 	if (head == NULL) {
-		printf("ERROR! Could not allocate the memmory!\n");
+		printf("ERROR! Could not allocate memmory!\n");
 		return EXIT_FAILURE;
 	}
 	head->next = NULL;
 
-	loadFromData(head, "studentii.txt");
-	loadFromFile1(head, "predmet1.txt");
-	loadFromFile2(head, "predmet2.txt");
+	loadFromFile(head, "studentii.txt");
 
+	loadGrades(head, "predmet1.txt", 0);
+	loadGrades(head, "predmet2.txt", 1);
+
+	printf("Pocetna lista: \n");
+	printList(head->next);
+
+	int d, m, y;
+
+	printf("Unesite datum za brisanje(DD/MM/YYY): \n");
+	scanf("%d.%d.%d", &d, &m, &y);
+
+	Date date = { y, m, d };
+
+	deleteByDate(head, date);
+
+	printf("\nLista nakon brisanja: \n");
 	printList(head->next);
 
 	freeList(head);
@@ -60,139 +80,108 @@ int main() {
 	return EXIT_SUCCESS;
 }
 
-StudentP createNewStudent(StudentP head, char* id, char* fname, char* lname, int grade[2], Date date[2]) {
-	StudentP newStudent = malloc(sizeof(Student));
+StudentP createNewStudent(char* id, char* fname, char* lname) {
+	StudentP newStudent = (StudentP)malloc(sizeof(Student));
 	if (newStudent == NULL) {
-		printf("ERROR! Could not allocate the memmory!\n");
+		printf("ERROR! Could not allocate memmory!\n");
 		return NULL;
 	}
+	Date date = { 0, 0, 0 };
 	strcpy(newStudent->ID, id);
 	strcpy(newStudent->firstName, fname);
 	strcpy(newStudent->lastName, lname);
-	
 	for (int i = 0; i < 2; i++) {
-		newStudent->grade[i] = grade[i];                 //ovako kad imas niz
-		newStudent->date[i] = date[i];					 //isto i za datume
+		newStudent->grade[i] = 1;
+		newStudent->date[i] = date;
 	}
+	newStudent->next = NULL;
 
 	return newStudent;
 }
 
-int loadFromData(StudentP head, char* fileName) {
+int loadFromFile(StudentP head, const char* fileName) {
 	FILE* fp = fopen(fileName, "r");
 	if (fp == NULL) {
-		printf("ERROR! Could not open the file!\n");
+		printf("ERROR! Could not allocate memmory!\n");
 		return EXIT_FAILURE;
 	}
-
-	char id[10], fname[MAX_NAME_LENGTH], lname[MAX_NAME_LENGTH];
-
+	char fname[MAX_NAME_LENGTH], lname[MAX_NAME_LENGTH], id[10];
 	while (fscanf(fp, "%s %s %s", id, fname, lname) == 3) {
-		int grade[2] = {0,0};
-		Date date[2] = { {0,0,0}, {0,0,0} };
-
-		StudentP newStudent = createNewStudent(head, id, fname, lname, grade, date);
+		StudentP newStudent = createNewStudent(id, fname, lname);
 		if (newStudent == NULL) {
-			printf("ERROR! Could not allocate the memmory!\n");
+			printf("ERROR! Could not allocate memmory!\n");
 			return EXIT_FAILURE;
 		}
 		insertSorted(head, newStudent);
 	}
-
 	fclose(fp);
 
 	return EXIT_SUCCESS;
 }
 
-int insertSorted(StudentP head, StudentP student) {							//pogledati ovaj sort (PREZIME i IME	)
+int insertSorted(StudentP head, StudentP newStudent) {
 	StudentP prev = head;
 	StudentP curr = head->next;
 	while (curr) {
-		if (strcmp(student->lastName, curr->lastName) < 0) {
+		if (strcmp(newStudent->lastName, curr->lastName) < 0) {
 			break;
 		}
-		else if (strcmp(student->lastName, curr->lastName) == 0) {
-			if (strcmp(student->firstName, curr->firstName) <= 0) {
+		else {
+			if ((strcmp(newStudent->lastName, curr->lastName) == 0) && (strcmp(newStudent->firstName, curr->firstName) <= 0)) {
 				break;
 			}
+			else {
+				prev = curr;
+				curr = curr->next;
+			}
 		}
-		prev = curr;
-		curr = curr->next;
 	}
-
-	student->next = curr;
-	prev->next = student;
+	prev->next = newStudent;
+	newStudent->next = curr;
 
 	return EXIT_SUCCESS;
 }
 
-int loadFromFile1(StudentP head, char* fileName) {
+int loadGrades(StudentP head, const char* fileName, int index) {
 	FILE* fp = fopen(fileName, "r");
 	if (fp == NULL) {
-		printf("ERROR! Could not open the file!\n");
+		printf("ERROR! Could not allocate memmory!\n");
 		return EXIT_FAILURE;
 	}
 	char id[10];
 	int grade, d, m, y;
-
 	while (fscanf(fp, "%s %d %d.%d.%d", id, &grade, &y, &m, &d) == 5) {
-		StudentP temp = head->next;
 		Date date = { y, m, d };
-		while (temp) {
-			if (strcmp(temp->ID, id) == 0) {
-				temp->grade[0] = grade;
-				temp->date[0] = date;
-				break;
-			}
-			temp = temp->next;
-		}
+		insertGradeAndDate(head, id, grade, index, date);
 	}
 	fclose(fp);
+
 	return EXIT_SUCCESS;
 }
 
-int loadFromFile2(StudentP head, char* fileName) {
-	FILE* fp = fopen(fileName, "r");
-	if (fp == NULL) {
-		printf("ERROR! Could not open the file!\n");
-		return EXIT_FAILURE;
-	}
-	char id[10];
-	int grade, d, m, y;
-
-	while (fscanf(fp, "%s %d %d.%d.%d", id, &grade, &y, &m, &d) == 5) {
-		StudentP temp = head->next;
-		Date date = { y, m, d };
-		while (temp) {
-			if (strcmp(temp->ID, id) == 0) {
-				temp->grade[1] = grade;
-				temp->date[1] = date;
-				break;
-			}
+int insertGradeAndDate(StudentP head, char* id, int grade, int index, Date date) {
+	StudentP temp = head;
+	while (temp) {
+		if (strcmp(temp->ID, id) == 0) {
+			temp->grade[index] = grade;
+			temp->date[index] = date;
+			return EXIT_SUCCESS;
+		}
+		else {
 			temp = temp->next;
 		}
 	}
-	fclose(fp);
+
 	return EXIT_SUCCESS;
 }
 
 int printList(StudentP first) {
 	StudentP temp = first;
 	while (temp) {
-		printf("ID: %s\n", temp->ID);
-		printf("First name: %s\n", temp->firstName);
-		printf("Last name: %s\n", temp->lastName);
-
-		for (int i = 0; i < 2; i++) {																	//poseban print za nizove!?
-			if (temp->grade[i] != 0) {
-				printf("Predmet %d - Ocjena %d, Datum: %d.%d.%d\n", i + 1, temp->grade[i],
-					temp->date[i].day, temp->date[i].month, temp->date[i].year);
-			}
-			else {
-				printf("Predmet %d - Ocjena nije upisana!\n", i + 1);
-			}
+		printf("ID: %s, Osoba: %s %s\n", temp->ID, temp->firstName, temp->lastName);
+		for (int i = 0; i < 2; i++) {
+			printf("Ocjena: %d, Datum: %d.%d.%d\n", temp->grade[i], temp->date[i].day, temp->date[i].month, temp->date[i].year);
 		}
-		printf("\n");
 		temp = temp->next;
 	}
 	return EXIT_SUCCESS;
@@ -200,12 +189,32 @@ int printList(StudentP first) {
 
 int freeList(StudentP head) {
 	StudentP temp = head->next;
-	while (temp) {
+	while(temp) {
 		StudentP toFree = temp;
 		temp = temp->next;
 		free(toFree);
 	}
 	head->next = NULL;
 
+	return EXIT_SUCCESS;
+}
+
+int deleteByDate(StudentP head, Date date) {
+	StudentP prev = head;
+	StudentP curr = head->next;
+	while (curr) {
+		Date date1 = curr->date[0];
+		Date date2 = curr->date[1];
+		if ((date1.year == date.year && date1.month == date.month && date1.day == date.day) ||
+			(date2.year == date.year && date2.month == date.month && date2.day == date.day)) {
+			prev->next = curr->next;
+			free(curr);
+			curr = prev->next;
+		}
+		else {
+			prev = curr;
+			curr = curr->next;
+		}
+	}
 	return EXIT_SUCCESS;
 }
