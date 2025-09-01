@@ -78,7 +78,7 @@ int insertSorted(ListaP head, ListaP newWord) {
     ListaP prev = head;
     ListaP curr = head->next;
     while (curr) {
-        if (strcmp(newWord->rijec, curr->rijec) < 0) {
+        if (strcmp(newWord->rijec, curr->rijec) > 0) {
             break;
         }
         else {
