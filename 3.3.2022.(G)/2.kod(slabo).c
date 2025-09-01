@@ -37,7 +37,6 @@ typedef struct _membership {
 
 MembershipP createNewMembership(char* id, char* fName, char* lName, int m, int y, int price);
 VisitP createNewVisit(char* id, int d, int m, int y);
-MembershipP findMembership(MembershipP head, char* id);
 int insertSortedMembership(MembershipP head, MembershipP newMembership);
 int insertSortedVisit(MembershipP membership, VisitP newVisit);
 int loadMembership(MembershipP head, const char* fileName);
@@ -101,16 +100,6 @@ VisitP createNewVisit(char* id, int d, int m, int y) {
     newVisit->next = NULL;
 
     return newVisit;
-}
-
-MembershipP findMembership(MembershipP head, char* id) {
-    MembershipP temp = head->next;
-    while (temp) {
-        if (strcmp(temp->userId, id) == 0)
-            return temp;
-        temp = temp->next;
-    }
-    return NULL;
 }
 
 int insertSortedMembership(MembershipP head, MembershipP newMembership) {
